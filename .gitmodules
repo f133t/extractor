@@ -1,0 +1,3 @@
+[submodule "vendor/gems/extractor-session"]
+	path = vendor/gems/extractor-session
+	url = https://github.com/f133t/extractor-session.git
