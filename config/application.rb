@@ -31,5 +31,11 @@ module Extractor
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    def redis
+      @redis ||= Redis.new(url: 'redis://%s:%d/0' % [ ENV['REDIS_HOSTNAME'], ENV['REDIS_PORT'] ])
+    end
+
+    config.profile_url_template = ENV.fetch('PROFILE_URL_TEMPLATE')
   end
 end

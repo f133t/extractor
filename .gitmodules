@@ -1,3 +1,6 @@
 [submodule "vendor/gems/extractor-session"]
 	path = vendor/gems/extractor-session
 	url = https://github.com/f133t/extractor-session.git
+[submodule "vendor/gems/httparty"]
+	path = vendor/gems/httparty
+	url = https://github.com/jdrago999/httparty.git

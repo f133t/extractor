@@ -1,8 +1,10 @@
 source 'https://rubygems.org'
 
 gem 'rails', '~> 5.1.4'
-gem 'httparty'
-gem 'extractor-session', git: 'https://github.com/f133t/extractor-session.git'
+gem 'sidekiq'
+gem 'redis-namespace'
+gem 'httparty', '0.15.7', path: 'vendor/gems/httparty'
+gem 'extractor-session', path: 'vendor/gems/extractor-session'
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console

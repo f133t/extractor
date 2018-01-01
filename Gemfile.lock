@@ -1,10 +1,16 @@
-GIT
-  remote: https://github.com/smashingk/extractor-session.git
-  revision: cc7450125a5d454f5ffed02130080106c5280032
+PATH
+  remote: vendor/gems/extractor-session
   specs:
     extractor-session (1.1.1)
       activesupport
       httparty
+
+PATH
+  remote: vendor/gems/httparty
+  specs:
+    httparty (0.15.7)
+      multi_xml (>= 0.5.2)
+      socksify
 
 GEM
   remote: https://rubygems.org/
@@ -50,13 +56,12 @@ GEM
     builder (3.2.3)
     byebug (9.1.0)
     concurrent-ruby (1.0.5)
+    connection_pool (2.2.1)
     crass (1.0.3)
     erubi (1.7.0)
     ffi (1.9.18)
     globalid (0.4.1)
       activesupport (>= 4.2.0)
-    httparty (0.15.6)
-      multi_xml (>= 0.5.2)
     i18n (0.9.1)
       concurrent-ruby (~> 1.0)
     listen (3.1.5)
@@ -77,6 +82,8 @@ GEM
     nokogiri (1.8.1)
       mini_portile2 (~> 2.3.0)
     rack (2.0.3)
+    rack-protection (2.0.0)
+      rack
     rack-test (0.8.2)
       rack (>= 1.0, < 3)
     rails (5.1.4)
@@ -106,7 +113,16 @@ GEM
     rb-fsevent (0.10.2)
     rb-inotify (0.9.10)
       ffi (>= 0.5.0, < 2)
+    redis (4.0.1)
+    redis-namespace (1.6.0)
+      redis (>= 3.0.4)
     ruby_dep (1.5.0)
+    sidekiq (5.0.5)
+      concurrent-ruby (~> 1.0)
+      connection_pool (~> 2.2, >= 2.2.0)
+      rack-protection (>= 1.5.0)
+      redis (>= 3.3.4, < 5)
+    socksify (1.7.1)
     spring (2.0.2)
       activesupport (>= 4.2)
     spring-watcher-listen (2.0.1)
@@ -135,9 +151,11 @@ PLATFORMS
 DEPENDENCIES
   byebug
   extractor-session!
-  httparty
+  httparty (= 0.15.7)!
   listen (>= 3.0.5, < 3.2)
   rails (~> 5.1.4)
+  redis-namespace
+  sidekiq
   spring
   spring-watcher-listen (~> 2.0.0)
   tzinfo-data
