@@ -6,40 +6,34 @@ class ProfileFetcherWorker
   sidekiq_options queue: :profile_fetcher_worker
 
   def perform(args={})
-    sleep 5
-    profile_url = args.fetch('profile_url')
+    sleep 10
+    profile_url = args.fetch('profile_url').gsub(/\r$/,'')
     operation_uuid = args.fetch('operation_uuid')
 
-    redis = Rails.application.redis
+    unless params
+      raise "Cannot get params for email #{email}"
+    end
 
-    email = redis.brpoplpush('session-ring', 'session-ring')
-    params = JSON.parse(redis.get('session-hash:%s' % email))
+    session = fetch_session!
 
-    session = Extractor::Session.new(
-      email: params.fetch('email'),
-      password: params.fetch('password'),
-      user_agent: params.fetch('user_agent'),
-      profile_url_template: params.fetch('profile_url_template'),
-      cookies: params.fetch('cookies'),
-      socks_proxy: params.fetch('socks_proxy'),
-    )
-
+    status = 'success'
     begin
-      profile = session.fetch_profile!(profile_url: profile_url)
-    rescue Extractor::NotAuthorizedError, Extractor::ProxyError, Errno::ECONNREFUSED => e
-      # We must mark this session as no longer valid:
-      warn 'Removing %s from the session-ring...' % email
-      loop do
-        session_email = redis.brpop('session-ring')
-        if session_email == email
-          # OK it's been removed from the session-ring -- also remove it from the hash:
-          redis.del('session-hash:%s' % email)
-          warn 'Finished removing %s from the session-ring' % email
-          break
-        else
-          redis.lpush('session-ring', session_email)
-        end
+      profile = JSON.parse(session.fetch_profile!(profile_url: profile_url)).merge(status: :success, identity: {email: session.email, socks_proxy: session.socks_proxy}).to_json
+    rescue Extractor::InvalidProfileUrlError,  Extractor::UserVisibilityError => e
+      warn "ERROR: #{e}"
+      profile = {status: :error, message: e.to_s, identity: {email: session.email, socks_proxy: session.socks_proxy}}.to_json
+      status = 'error'
+    rescue Extractor::NotAuthorizedError, Extractor::ProxyError, Errno::ECONNREFUSED, StandardError => e
+      if e.to_s =~ %r{failure in name resolution}
+        warn "WARN: Wating 5 seconds b/c of #{e}"
+        sleep 5
+        perform(args)
       end
+      # We must mark this session as no longer valid:
+      warn 'Removing %s from the session-hash because of [%s]...' % [email, e]
+          remove_session!(session)
+          warn 'Finished removing %s from the session-hash' % email
+      raise e
     end
 
     # Prepare this for transport (about 80% size reduction):
@@ -51,8 +45,36 @@ class ProfileFetcherWorker
       'args' => [
         operation_uuid: operation_uuid,
         profile_data_base64: encoded,
-        profile_url: profile_url
+        profile_url: profile_url,
+        status: status
       ]
     )
+  end
+
+  private
+
+  def redis
+    Rails.application.redis
+  end
+
+  def fetch_session!
+    # Just fetch a session at random.
+    key = redis.keys('session-hash:*').sample rescue nil
+    raise 'No entries in session-hash:*' unless key
+
+    params = JSON.parse(redis.get(key)) rescue nil
+    raise 'Cannot parse JSON from redis key "%s"' % email
+    session = Extractor::Session.new(
+      email: params.fetch('email'),
+      password: params.fetch('password'),
+      user_agent: params.fetch('user_agent'),
+      profile_url_template: params.fetch('profile_url_template'),
+      cookies: params.fetch('cookies'),
+      socks_proxy: params.fetch('socks_proxy'),
+    )
+  end
+
+  def remove_session!(session)
+    redis.del('session-hash:%s' % session.email)
   end
 end
